@@ -1,25 +1,82 @@
-const dotenv = require("dotenv").config();
+require("dotenv").config();
 const express = require('express');
 const app = express();
 const bodyparser=require('body-parser');
 const exhbs= require('express-handlebars'); 
-const dbo =require('./db');
-const ObjectID_id =dbo.ObjectId;
+ const dbo =require('./db');
+// const ObjectID_id =dbo.ObjectId;
+const BookModel = require('./models/bookModel'); // mongo
+const config = require('./utils/config');
 
-const config = require('./utils/config')
 const PORT_B = config.PORT || 5000;
 
+//connect to mongo db 
+dbo.getDatabase();
 
-app.engine('hbs',exhbs.engine({layoutsDir:'views/',defaultLayout:"main",extname:"hbs"}))
+app.engine('hbs',exhbs.engine(
+    {
+        layoutsDir:'views/',
+        defaultLayout:"main",
+        extname:"hbs",
+        runtimeOptions:{
+            allowProtoPropertiesByDefault:true,
+            allowProtoMethodsByDefault:true
+        }
+    }))
 app.set('view engine','hbs');
 app.set('views','views');
 app.use(bodyparser.urlencoded({extended:true}))
 
+// app.get('/',async (req,res)=>{
+//     let database = await dbo.getDatabase();
+//     const collection = database.collection('books');
+//     const cursor = collection.find({})
+//     let books = await cursor.toArray();
+
+//     let message ="";
+//     //edit
+//     let edit_id,edit_book;
+// if (req.query.edit_id) {
+//     edit_id = req.query.edit_id;
+//     // edit_book = await collection.findOne({_id:edit_id})
+//     edit_book = await collection.findOne({_id:new ObjectID_id(edit_id)})
+  
+// }   
+// //delete
+// if (req.query.delete_id) {
+//     delete_id = req.query.delete_id;
+
+//   await collection.deleteOne({_id: new ObjectID_id(delete_id)});
+//   return res.redirect('/?status=3')
+ 
+  
+// }   
+//     switch (req.query.status) {
+//         case "1":
+//             message = "Inserted Succesfully"
+//             break;
+//             case "2":
+//             message = "Update Succesfully"
+//             break;
+//             case "3":
+//                 message = "Delete Succesfully"
+//                 break;
+//         default:
+//             break;
+//     }
+
+//     res.render('main',{message,books,edit_id,edit_book})
+// })
+
+
+
+//create in mongoose
 app.get('/',async (req,res)=>{
-    let database = await dbo.getDatabase();
-    const collection = database.collection('books');
-    const cursor = collection.find({})
-    let books = await cursor.toArray();
+    // let database = await dbo.getDatabase();
+    // const collection = database.collection('books');
+    // const cursor = collection.find({})
+    // let books = await cursor.toArray();
+    let books = await BookModel.find({});
 
     let message ="";
     //edit
@@ -27,14 +84,17 @@ app.get('/',async (req,res)=>{
 if (req.query.edit_id) {
     edit_id = req.query.edit_id;
     // edit_book = await collection.findOne({_id:edit_id})
-    edit_book = await collection.findOne({_id:new ObjectID_id(edit_id)})
+    // edit_book = await collection.findOne({_id:new ObjectID_id(edit_id)})
+    edit_book = await BookModel.findOne({_id:edit_id});
   
 }   
 //delete
 if (req.query.delete_id) {
-    delete_id = req.query.delete_id;
+    // delete_id = req.query.delete_id;
 
-  await collection.deleteOne({_id: new ObjectID_id(delete_id)});
+//   await collection.deleteOne({_id: new ObjectID_id(delete_id)});
+await BookModel.deleteOne({_id:req.query.delete_id});
+
   return res.redirect('/?status=3')
  
   
@@ -55,27 +115,49 @@ if (req.query.delete_id) {
 
     res.render('main',{message,books,edit_id,edit_book})
 })
+//create 
+// app.post('/store_book',async(req, res)=>{
+//     let database = await dbo.getDatabase();
+//     const collection = database.collection('books');
+//     let book = {title:req.body.title , author:req.body.author}
+//     await collection.insertOne(book);
+//     return res.redirect('/?status=1')
 
-//create
+// })
+//create in monmgose
 app.post('/store_book',async(req, res)=>{
-    let database = await dbo.getDatabase();
-    const collection = database.collection('books');
-    let book = {title:req.body.title , author:req.body.author}
-    await collection.insertOne(book);
+   
+    // const collection = database.collection('books');
+    // let book = {title:req.body.title , author:req.body.author}
+    // await collection.insertOne(book);
+   const book= new BookModel({title:req.body.title , author:req.body.author});
+   book.save();
     return res.redirect('/?status=1')
 
 })
+
 //edit
+// app.post('/update_book/:edit_id',async(req, res)=>{
+//     let database = await dbo.getDatabase();
+//     const collection = database.collection('books');
+//     let book = {title:req.body.title , author:req.body.author}
+//     let edit_id = req.params.edit_id
+//     await collection.updateOne({_id:new ObjectID_id(edit_id)},{$set:book});
+//     return res.redirect('/?status=2')
+
+// })
+//edit in mongoss
 app.post('/update_book/:edit_id',async(req, res)=>{
-    let database = await dbo.getDatabase();
-    const collection = database.collection('books');
-    let book = {title:req.body.title , author:req.body.author}
+    // let database = await dbo.getDatabase();
+    // const collection = database.collection('books');
+    // let book = {title:req.body.title , author:req.body.author}
     let edit_id = req.params.edit_id
-    await collection.updateOne({_id:new ObjectID_id(edit_id)},{$set:book});
+    // await collection.updateOne({_id:new ObjectID_id(edit_id)},{$set:book});
+       await BookModel.findOneAndUpdate({_id:edit_id},{title:req.body.title , author:req.body.author})
     return res.redirect('/?status=2')
 
 })
-//delete
+
 
 
 app.listen(PORT_B,()=>{
